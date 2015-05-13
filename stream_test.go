@@ -6,20 +6,20 @@ import (
 
 func TestTopZeroIsEmpty(t *testing.T) {
 	summary := NewSummary(1)
-	assertEqualInt(t, 0, len(summary.Top(0)))
+	assertEqualInt(t, len(summary.Top(0)), 0)
 }
 
 func TestTopNotLargerThanCapacity(t *testing.T) {
 	summary := NewSummary(1)
 	summary.Observe("item")
-	assertEqualInt(t, 1, len(summary.Top(2)))
+	assertEqualInt(t, len(summary.Top(2)), 1)
 }
 
 func TestTopNotLargerThanN(t *testing.T) {
 	summary := NewSummary(2)
 	summary.Observe("one")
 	summary.Observe("two")
-	assertEqualInt(t, 1, len(summary.Top(1)))
+	assertEqualInt(t, len(summary.Top(1)), 1)
 }
 
 func TestTopOrderedDescending(t *testing.T) {
@@ -27,8 +27,8 @@ func TestTopOrderedDescending(t *testing.T) {
 	summary.Observe("once")
 	summary.Observe("twice")
 	summary.Observe("twice")
-	assertEqualString(t, "twice", summary.Top(2)[0].Item)
-	assertEqualString(t, "once", summary.Top(2)[1].Item)
+	assertEqualString(t, summary.Top(2)[0].Item, "twice")
+	assertEqualString(t, summary.Top(2)[1].Item, "once")
 }
 
 func TestTopOrderedDescendingWithJump(t *testing.T) {
@@ -37,7 +37,7 @@ func TestTopOrderedDescendingWithJump(t *testing.T) {
 	summary.Observe("once b")
 	summary.Observe("twice")
 	summary.Observe("twice")
-	assertEqualString(t, "twice", summary.Top(3)[0].Item)
+	assertEqualString(t, summary.Top(3)[0].Item, "twice")
 }
 
 func TestErrorRateWhenExceedingCapacity(t *testing.T) {
@@ -47,7 +47,7 @@ func TestErrorRateWhenExceedingCapacity(t *testing.T) {
 	summary.Observe("zero")
 	summary.Observe("two")
 	summary.Observe("zero")
-	assertEqualUint64(t, 1, summary.Top(2)[1].ErrorRate)
+	assertEqualUint64(t, summary.Top(2)[1].ErrorRate, 1)
 }
 
 func TestCountWhenExceedingCapacity(t *testing.T) {
@@ -55,23 +55,23 @@ func TestCountWhenExceedingCapacity(t *testing.T) {
 	summary.Observe("zero")
 	summary.Observe("one")
 	summary.Observe("zero")
-	assertEqualUint64(t, 3, summary.Top(1)[0].Count)
+	assertEqualUint64(t, summary.Top(1)[0].Count, 3)
 }
 
-func assertEqualString(t *testing.T, expected, actual string) {
+func assertEqualString(t *testing.T, actual, expected string) {
 	if actual != expected {
-		t.Errorf("Expected %s but was %s", expected, actual)
+		t.Errorf("Got %s but expected %s", actual, expected)
 	}
 }
 
-func assertEqualInt(t *testing.T, expected, actual int) {
+func assertEqualInt(t *testing.T, actual, expected int) {
 	if actual != expected {
-		t.Errorf("Expected %d but was %d", expected, actual)
+		t.Errorf("Got %d but expected %d", actual, expected)
 	}
 }
 
-func assertEqualUint64(t *testing.T, expected, actual uint64) {
+func assertEqualUint64(t *testing.T, actual, expected uint64) {
 	if actual != expected {
-		t.Errorf("Expected %d but was %d", expected, actual)
+		t.Errorf("Got %d but expected %d", actual, expected)
 	}
 }
