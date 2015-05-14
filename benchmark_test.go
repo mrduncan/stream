@@ -18,10 +18,9 @@ func benchmarkObserve(b *testing.B, capacity int, distinct uint64) {
 	r := rand.New(rand.NewSource(1))
 	zipf := rand.NewZipf(r, 1.5, 5, distinct)
 
-	data := []string{}
+	data := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
-		item := strconv.FormatUint(zipf.Uint64(), 10)
-		data = append(data, item)
+		data[i] = strconv.FormatUint(zipf.Uint64(), 10)
 	}
 
 	summary := NewSummary(capacity)

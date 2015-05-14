@@ -10,10 +10,6 @@ type Counter struct {
 	ErrorRate uint64
 }
 
-func newCounter(item string) *Counter {
-	return &Counter{Item: item, Count: 1, ErrorRate: 0}
-}
-
 // Summary represents a Stream-Summary data structure as described in "Efficient
 // Computation of Frequent and Top-k Elements in Data Streams".
 type Summary struct {
@@ -28,7 +24,7 @@ type Summary struct {
 func NewSummary(capacity int) *Summary {
 	return &Summary{
 		capacity: capacity,
-		counters: []*Counter{},
+		counters: make([]*Counter, 0, capacity),
 		index:    make(map[string]int),
 	}
 }
@@ -72,16 +68,18 @@ func (s *Summary) Observe(item string) {
 	} else {
 		if len(s.counters) < s.capacity {
 			// Add the new counter since the summary is below capacity.
-			s.counters = append(s.counters, newCounter(item))
+			s.counters = append(s.counters, &Counter{Item: item, Count: 1})
 			s.index[item] = len(s.counters) - 1
 		} else {
 			// Replace the lowest counter with a new counter.
 			minCounter := s.counters[len(s.counters)-1]
 			delete(s.index, minCounter.Item)
 
-			counter := newCounter(item)
-			counter.Count = minCounter.Count + 1
-			counter.ErrorRate = minCounter.Count
+			counter := &Counter{
+				Item:      item,
+				Count:     minCounter.Count + 1,
+				ErrorRate: minCounter.Count,
+			}
 			s.counters[len(s.counters)-1] = counter
 			s.index[item] = len(s.counters) - 1
 		}
