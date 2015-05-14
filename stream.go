@@ -25,7 +25,11 @@ type Summary struct {
 
 // NewSummary returns a new Summary with the given max capacity.
 func NewSummary(capacity int) *Summary {
-	return &Summary{capacity: capacity, counters: []*Counter{}, index: make(map[string]int)}
+	return &Summary{
+		capacity: capacity,
+		counters: []*Counter{},
+		index:    make(map[string]int),
+	}
 }
 
 // Top returns the top n Counters in the Summary.  If the Summary contains less
@@ -49,15 +53,19 @@ func (s *Summary) Observe(item string) {
 	i, exists := s.index[item]
 	if exists {
 		s.counters[i].Count++
+
+		// Slide this counter forward in the array to keep it in sorted order.
 		for i > 0 && s.counters[i].Count > s.counters[i-1].Count {
-			s.promote(i)
+			s.swap(i, i-1)
 			i--
 		}
 	} else {
 		if len(s.counters) < s.capacity {
+			// Add the new counter since the summary is below capacity.
 			s.counters = append(s.counters, newCounter(item))
 			s.index[item] = len(s.counters) - 1
 		} else {
+			// Replace the lowest counter with a new counter.
 			minCounter := s.counters[len(s.counters)-1]
 			delete(s.index, minCounter.Item)
 
@@ -70,13 +78,8 @@ func (s *Summary) Observe(item string) {
 	}
 }
 
-func (s *Summary) promote(i int) {
-	toPromote := s.counters[i]
-	toDemote := s.counters[i-1]
-
-	s.counters[i-1] = toPromote
-	s.index[toPromote.Item] = i - 1
-
-	s.counters[i] = toDemote
-	s.index[toDemote.Item] = i
+func (s *Summary) swap(i, j int) {
+	s.index[s.counters[i].Item] = j
+	s.index[s.counters[j].Item] = i
+	s.counters[j], s.counters[i] = s.counters[i], s.counters[j]
 }

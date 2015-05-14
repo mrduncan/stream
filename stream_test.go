@@ -29,9 +29,10 @@ func TestTopOrderedDescending(t *testing.T) {
 
 func TestExceedCapacity(t *testing.T) {
 	summary := NewSummary(1)
-	summary.Observe("zero")
+	summary.Observe("twice")
 	summary.Observe("one")
-	summary.Observe("zero")
+	summary.Observe("twice")
+	assertEqual(t, summary.Top(1)[0].Item, "twice")
 	assertEqual(t, summary.Top(1)[0].Count, uint64(3))
 	assertEqual(t, summary.Top(1)[0].ErrorRate, uint64(2))
 }
