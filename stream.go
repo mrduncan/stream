@@ -17,6 +17,7 @@ func newCounter(item string) *Counter {
 // Summary represents a Stream-Summary data structure as described in "Efficient
 // Computation of Frequent and Top-k Elements in Data Streams".
 type Summary struct {
+	observed uint64
 	capacity int
 	counters []*Counter
 	index    map[string]int
@@ -30,6 +31,13 @@ func NewSummary(capacity int) *Summary {
 		counters: []*Counter{},
 		index:    make(map[string]int),
 	}
+}
+
+// Observed returns the total number of observations which have occurred.
+func (s *Summary) Observed() uint64 {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+	return s.observed
 }
 
 // Top returns the top n Counters in the Summary.  If the Summary contains less
@@ -49,6 +57,8 @@ func (s *Summary) Top(n int) []*Counter {
 func (s *Summary) Observe(item string) {
 	s.rw.Lock()
 	defer s.rw.Unlock()
+
+	s.observed++
 
 	i, exists := s.index[item]
 	if exists {

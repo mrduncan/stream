@@ -37,6 +37,16 @@ func TestExceedCapacity(t *testing.T) {
 	assertEqual(t, summary.Top(1)[0].ErrorRate, uint64(2))
 }
 
+func TestObserved(t *testing.T) {
+	summary := NewSummary(1)
+	assertEqual(t, summary.Observed(), uint64(0))
+	summary.Observe("item a")
+	assertEqual(t, summary.Observed(), uint64(1))
+	summary.Observe("item b")
+	summary.Observe("item c")
+	assertEqual(t, summary.Observed(), uint64(3))
+}
+
 func assertEqual(t *testing.T, actual, expected interface{}) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Got %+v but expected %+v", actual, expected)
