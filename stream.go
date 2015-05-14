@@ -1,6 +1,8 @@
 // Package stream implements stream algorithms.
 package stream
 
+import "sync"
+
 // Counter represents a counted item in a Summary.
 type Counter struct {
 	Item      string
@@ -18,6 +20,7 @@ type Summary struct {
 	capacity int
 	counters []*Counter
 	index    map[string]int
+	rw       sync.RWMutex
 }
 
 // NewSummary returns a new Summary with the given max capacity.
@@ -28,6 +31,9 @@ func NewSummary(capacity int) *Summary {
 // Top returns the top n Counters in the Summary.  If the Summary contains less
 // than n Counters, all Counters in the Summary are returned.
 func (s *Summary) Top(n int) []*Counter {
+	s.rw.RLock()
+	defer s.rw.RUnlock()
+
 	if n > len(s.counters) {
 		return s.counters[0:len(s.counters)]
 	}
@@ -37,6 +43,9 @@ func (s *Summary) Top(n int) []*Counter {
 
 // Observe adds an observation of an item to the Summary.
 func (s *Summary) Observe(item string) {
+	s.rw.Lock()
+	defer s.rw.Unlock()
+
 	i, exists := s.index[item]
 	if exists {
 		s.counters[i].Count++
