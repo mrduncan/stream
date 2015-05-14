@@ -61,29 +61,39 @@ func (s *Summary) Observe(item string) {
 		s.counters[i].Count++
 
 		// Slide this counter forward in the array to keep it in sorted order.
-		for i > 0 && s.counters[i].Count > s.counters[i-1].Count {
+		for ; i > 0 && s.counters[i].Count > s.counters[i-1].Count; i-- {
 			s.swap(i, i-1)
-			i--
 		}
 	} else {
 		if len(s.counters) < s.capacity {
-			// Add the new counter since the summary is below capacity.
-			s.counters = append(s.counters, &Counter{Item: item, Count: 1})
-			s.index[item] = len(s.counters) - 1
+			s.append(&Counter{Item: item, Count: 1})
 		} else {
-			// Replace the lowest counter with a new counter.
-			minCounter := s.counters[len(s.counters)-1]
-			delete(s.index, minCounter.Item)
-
+			lastIndex := len(s.counters) - 1
+			minCounter := s.deleteAt(lastIndex)
 			counter := &Counter{
 				Item:      item,
 				Count:     minCounter.Count + 1,
 				ErrorRate: minCounter.Count,
 			}
-			s.counters[len(s.counters)-1] = counter
-			s.index[item] = len(s.counters) - 1
+			s.insertAt(lastIndex, counter)
 		}
 	}
+}
+
+func (s *Summary) append(counter *Counter) {
+	s.counters = append(s.counters, counter)
+	s.index[counter.Item] = len(s.counters) - 1
+}
+
+func (s *Summary) deleteAt(i int) *Counter {
+	counter := s.counters[len(s.counters)-1]
+	delete(s.index, counter.Item)
+	return counter
+}
+
+func (s *Summary) insertAt(i int, counter *Counter) {
+	s.counters[i] = counter
+	s.index[counter.Item] = i
 }
 
 func (s *Summary) swap(i, j int) {
