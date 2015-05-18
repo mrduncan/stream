@@ -5,9 +5,24 @@ import "sync"
 
 // Counter represents a counted item in a Summary.
 type Counter struct {
-	Item      string
-	Count     uint64
-	ErrorRate uint64
+	item      string
+	count     uint64
+	errorRate uint64
+}
+
+// Item returns the item being counted.
+func (c *Counter) Item() string {
+	return c.item
+}
+
+// Count returns the count for the counter.
+func (c *Counter) Count() uint64 {
+	return c.count
+}
+
+// ErrorRate returns the error rate for the counter.
+func (c *Counter) ErrorRate() uint64 {
+	return c.errorRate
 }
 
 // Summary represents a Stream-Summary data structure as described in "Efficient
@@ -58,22 +73,22 @@ func (s *Summary) Observe(item string) {
 
 	i, exists := s.index[item]
 	if exists {
-		s.counters[i].Count++
+		s.counters[i].count++
 
 		// Slide this counter forward in the array to keep it in sorted order.
-		for ; i > 0 && s.counters[i].Count > s.counters[i-1].Count; i-- {
+		for ; i > 0 && s.counters[i].count > s.counters[i-1].count; i-- {
 			s.swap(i, i-1)
 		}
 	} else {
 		if len(s.counters) < s.capacity {
-			s.append(&Counter{Item: item, Count: 1})
+			s.append(&Counter{item: item, count: 1})
 		} else {
 			lastIndex := len(s.counters) - 1
 			minCounter := s.deleteAt(lastIndex)
 			counter := &Counter{
-				Item:      item,
-				Count:     minCounter.Count + 1,
-				ErrorRate: minCounter.Count,
+				item:      item,
+				count:     minCounter.count + 1,
+				errorRate: minCounter.count,
 			}
 			s.insertAt(lastIndex, counter)
 		}
@@ -82,22 +97,22 @@ func (s *Summary) Observe(item string) {
 
 func (s *Summary) append(counter *Counter) {
 	s.counters = append(s.counters, counter)
-	s.index[counter.Item] = len(s.counters) - 1
+	s.index[counter.item] = len(s.counters) - 1
 }
 
 func (s *Summary) deleteAt(i int) *Counter {
 	counter := s.counters[len(s.counters)-1]
-	delete(s.index, counter.Item)
+	delete(s.index, counter.item)
 	return counter
 }
 
 func (s *Summary) insertAt(i int, counter *Counter) {
 	s.counters[i] = counter
-	s.index[counter.Item] = i
+	s.index[counter.item] = i
 }
 
 func (s *Summary) swap(i, j int) {
-	s.index[s.counters[i].Item] = j
-	s.index[s.counters[j].Item] = i
+	s.index[s.counters[i].item] = j
+	s.index[s.counters[j].item] = i
 	s.counters[j], s.counters[i] = s.counters[i], s.counters[j]
 }

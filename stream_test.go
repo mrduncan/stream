@@ -22,9 +22,9 @@ func TestTopOrderedDescending(t *testing.T) {
 	summary.Observe("once b")
 	summary.Observe("twice")
 	summary.Observe("twice")
-	assertEqual(t, summary.Top(3)[0].Item, "twice")
-	assertEqual(t, summary.Top(3)[1].Item, "once a")
-	assertEqual(t, summary.Top(3)[2].Item, "once b")
+	assertEqual(t, summary.Top(3)[0].Item(), "twice")
+	assertEqual(t, summary.Top(3)[1].Item(), "once a")
+	assertEqual(t, summary.Top(3)[2].Item(), "once b")
 }
 
 func TestExceedCapacity(t *testing.T) {
@@ -32,9 +32,9 @@ func TestExceedCapacity(t *testing.T) {
 	summary.Observe("twice")
 	summary.Observe("one")
 	summary.Observe("twice")
-	assertEqual(t, summary.Top(1)[0].Item, "twice")
-	assertEqual(t, summary.Top(1)[0].Count, uint64(3))
-	assertEqual(t, summary.Top(1)[0].ErrorRate, uint64(2))
+	assertEqual(t, summary.Top(1)[0].Item(), "twice")
+	assertEqual(t, summary.Top(1)[0].Count(), uint64(3))
+	assertEqual(t, summary.Top(1)[0].ErrorRate(), uint64(2))
 }
 
 func TestObserved(t *testing.T) {
