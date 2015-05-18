@@ -11,7 +11,7 @@ func BenchmarkObserveSmallCapacity(b *testing.B) {
 }
 
 func BenchmarkObserveLargeCapacity(b *testing.B) {
-	benchmarkObserve(b, 2000, 500000)
+	benchmarkObserve(b, 100000, 500000)
 }
 
 func benchmarkObserve(b *testing.B, capacity int, distinct uint64) {
