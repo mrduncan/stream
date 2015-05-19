@@ -1,7 +1,10 @@
 // Package stream implements stream algorithms.
 package stream
 
-import "sync"
+import (
+	"container/list"
+	"sync"
+)
 
 // Counter represents a counted item in a Summary.
 type Counter struct {
@@ -30,8 +33,8 @@ func (c *Counter) ErrorRate() uint64 {
 type Summary struct {
 	observed uint64
 	capacity int
-	counters []*Counter
-	index    map[string]int
+	list     *list.List
+	index    map[string]*list.Element
 	rw       sync.RWMutex
 }
 
@@ -39,8 +42,8 @@ type Summary struct {
 func NewSummary(capacity int) *Summary {
 	return &Summary{
 		capacity: capacity,
-		counters: make([]*Counter, 0, capacity),
-		index:    make(map[string]int),
+		list:     list.New(),
+		index:    make(map[string]*list.Element),
 	}
 }
 
@@ -57,11 +60,14 @@ func (s *Summary) Top(n int) []*Counter {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
 
-	if n > len(s.counters) {
-		return s.counters[0:len(s.counters)]
+	el := s.list.Front()
+	top := make([]*Counter, 0, min(n, s.list.Len()))
+	for i := 0; i < n && el != nil; i++ {
+		top = append(top, el.Value.(*Counter))
+		el = el.Next()
 	}
 
-	return s.counters[0:n]
+	return top
 }
 
 // Observe adds an observation of an item to the Summary.
@@ -71,48 +77,65 @@ func (s *Summary) Observe(item string) {
 
 	s.observed++
 
-	i, exists := s.index[item]
+	el, exists := s.index[item]
 	if exists {
-		s.counters[i].count++
-
-		// Slide this counter forward in the array to keep it in sorted order.
-		for ; i > 0 && s.counters[i].count > s.counters[i-1].count; i-- {
-			s.swap(i, i-1)
-		}
+		s.incrElement(el)
 	} else {
-		if len(s.counters) < s.capacity {
+		if s.list.Len() < s.capacity {
 			s.append(&Counter{item: item, count: 1})
 		} else {
-			lastIndex := len(s.counters) - 1
-			minCounter := s.deleteAt(lastIndex)
-			counter := &Counter{
+			minCounter := s.deleteBack()
+			s.append(&Counter{
 				item:      item,
 				count:     minCounter.count + 1,
 				errorRate: minCounter.count,
-			}
-			s.insertAt(lastIndex, counter)
+			})
 		}
 	}
 }
 
 func (s *Summary) append(counter *Counter) {
-	s.counters = append(s.counters, counter)
-	s.index[counter.item] = len(s.counters) - 1
+	s.index[counter.item] = s.list.PushBack(counter)
 }
 
-func (s *Summary) deleteAt(i int) *Counter {
-	counter := s.counters[len(s.counters)-1]
-	delete(s.index, counter.item)
-	return counter
+func (s *Summary) deleteBack() *Counter {
+	el := s.list.Back()
+	s.list.Remove(el)
+	c := el.Value.(*Counter)
+	delete(s.index, c.item)
+	return c
 }
 
-func (s *Summary) insertAt(i int, counter *Counter) {
-	s.counters[i] = counter
-	s.index[counter.item] = i
+func (s *Summary) incrElement(el *list.Element) {
+	counter := el.Value.(*Counter)
+	counter.count++
+
+	// This element already has the largest count so it won't get moved.
+	if s.list.Front() == el {
+		return
+	}
+
+	// Starting at the previous element, move this element behind the first
+	// element we find which has a higher count.
+	moved := false
+	for currEl := el.Prev(); currEl != nil; currEl = currEl.Prev() {
+		if currEl.Value.(*Counter).count > counter.count {
+			s.list.MoveAfter(el, currEl)
+			moved = true
+			break
+		}
+	}
+
+	// If we didn't find an element with a higher count then this element must
+	// have the highest count.  Move it to the front.
+	if !moved {
+		s.list.MoveToFront(el)
+	}
 }
 
-func (s *Summary) swap(i, j int) {
-	s.index[s.counters[i].item] = j
-	s.index[s.counters[j].item] = i
-	s.counters[j], s.counters[i] = s.counters[i], s.counters[j]
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
