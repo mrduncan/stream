@@ -73,10 +73,8 @@ func (s *Summary) Top(n int) []*Counter {
 // Observe adds an observation of an item to the Summary.
 func (s *Summary) Observe(item string) {
 	s.rw.Lock()
-	defer s.rw.Unlock()
 
 	s.observed++
-
 	el, exists := s.index[item]
 	if exists {
 		s.incrElement(el)
@@ -92,6 +90,8 @@ func (s *Summary) Observe(item string) {
 			})
 		}
 	}
+
+	s.rw.Unlock()
 }
 
 func (s *Summary) append(counter *Counter) {
